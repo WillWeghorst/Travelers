@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travelers Championship Draft</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --surface-0: #f5f4f0;
+    --surface-1: #eeede9;
+    --surface-2: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-muted: #888780;
+    --text-success: #0f6e56;
+    --bg-success: #e1f5ee;
+    --text-danger: #993c1d;
+    --bg-danger: #faece7;
+    --text-warning: #854f0b;
+    --bg-warning: #faeeda;
+    --radius: 8px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-0: #1a1a18;
+      --surface-1: #242422;
+      --surface-2: #2c2c2a;
+      --border: rgba(255,255,255,0.1);
+      --border-strong: rgba(255,255,255,0.18);
+      --text-primary: #f0efe9;
+      --text-secondary: #b4b2a9;
+      --text-muted: #888780;
+      --text-success: #5dcaa5;
+      --bg-success: #04342c;
+      --text-danger: #f0997b;
+      --bg-danger: #4a1b0c;
+      --text-warning: #ef9f27;
+      --bg-warning: #412402;
+    }
+  }
+  body { font-family: var(--font-sans); background: var(--surface-0); color: var(--text-primary); min-height: 100vh; }
+  .page { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+  .header { text-align: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); }
+  .header h1 { font-size: 24px; font-weight: 500; margin-bottom: 6px; }
+  .header-meta { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+  .subtitle { font-size: 13px; color: var(--text-secondary); }
+  .live-badge { display: none; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: var(--bg-danger); color: var(--text-danger); }
+  .live-badge.visible { display: inline-flex; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-danger); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .refresh-btn { background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 5px 12px; font-size: 12px; cursor: pointer; color: var(--text-secondary); font-family: var(--font-sans); }
+  .refresh-btn:hover { background: var(--surface-1); color: var(--text-primary); }
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); }
+  .tab { padding: 9px 18px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: var(--font-sans); }
+  .tab.active { color: var(--text-primary); border-bottom-color: var(--text-primary); font-weight: 500; }
+  .tab:hover:not(.active) { color: var(--text-primary); }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tbl th { text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 500; color: var(--text-muted); border-bottom: 0.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tbl td { padding: 11px 12px; border-bottom: 0.5px solid var(--border); }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tbody tr:hover td { background: var(--surface-1); }
+  .winner-row td { background: var(--bg-success) !important; }
+  .score-good { color: var(--text-success); font-weight: 500; }
+  .score-bad { color: var(--text-danger); font-weight: 500; }
+  .score-even { color: var(--text-secondary); }
+  .roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .roster-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; }
+  .rc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 0.5px solid var(--border); }
+  .rc-name { font-weight: 500; font-size: 15px; }
+  .rc-total { font-size: 20px; font-weight: 500; }
+  .pick-tbl { width: 100%; font-size: 13px; border-collapse: collapse; }
+  .pick-tbl td { padding: 5px 0; border-bottom: 0.5px solid var(--border); color: var(--text-secondary); }
+  .pick-tbl td:last-child { text-align: right; font-weight: 500; color: var(--text-primary); min-width: 40px; }
+  .pick-tbl tr:last-child td { border-bottom: none; }
+  .mc-chip { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: var(--bg-danger); color: var(--text-danger); margin-left: 5px; vertical-align: middle; }
+  .loading { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 14px; }
+  .error-msg { text-align: center; padding: 2rem; color: var(--text-danger); font-size: 14px; background: var(--bg-danger); border-radius: 12px; }
+  @media (max-width: 600px) {
+    .tbl th:nth-child(3), .tbl td:nth-child(3),
+    .tbl th:nth-child(4), .tbl td:nth-child(4),
+    .tbl th:nth-child(5), .tbl td:nth-child(5) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <h1>Travelers Championship Draft</h1>
+    <div class="header-meta">
+      <span id="live-badge" class="live-badge"><span class="live-dot"></span>Live</span>
+      <span class="subtitle" id="subtitle">TPC River Highlands · Cromwell, CT</span>
+      <button class="refresh-btn" onclick="loadData()">&#8635; Refresh</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('standings',this)">Standings</button>
+    <button class="tab" onclick="showTab('rosters',this)">Rosters</button>
+    <button class="tab" onclick="showTab('field',this)">Live field</button>
+  </div>
+
+  <div id="standings" class="section active"><div class="loading">Loading live scores…</div></div>
+  <div id="rosters" class="section"><div class="loading">Loading live scores…</div></div>
+  <div id="field" class="section"><div class="loading">Loading live scores…</div></div>
+</div>
+
+<script>
+const TOURNAMENT_ID = '401811953';
+const API = `https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard?event=${TOURNAMENT_ID}`;
+
+const PICKS = {
+  'Ferg':    ['Scottie Scheffler','Rory McIlroy','Tommy Fleetwood','Keegan Bradley','Sam Burns','Akshay Bhatia','Russell Henley','Corey Conners'],
+  'Tyler':   ['Collin Morikawa','Cameron Young','Matt Fitzpatrick','Si Woo Kim','Brian Harman','Aaron Rai','J.T. Poston','Hideki Matsuyama'],
+  'Ryan':    ['Wyndham Clark','Viktor Hovland','Justin Thomas','Patrick Cantlay','Harris English','Joaquín Niemann','Justin Rose','Sepp Straka'],
+  'Sam':     ['Xander Schauffele','Jon Rahm','Tom Kim','Chris Gotterup','Maverick McNealy','Dustin Johnson','Bud Cauley','Alex Fitzpatrick'],
+  'Jake':    ['Ludvig Åberg','Shane Lowry','Cameron Smith','Min Woo Lee','Eric Cole','Jacob Bridgeman','Max Greyserman','Adam Scott'],
+  'Curt':    ['Tyrrell Hatton','Tommy Fleetwood','J.J. Spaun','Kurt Kitayama','Gary Woodland','Nick Taylor','Matt McCarty','Ryan Gerard'],
+  'Will':    ['Bryson DeChambeau','Ludvig Åberg','Russell Henley','Adam Scott','Ben Griffin','Alex Noren','Ryan Fox','Daniel Berger'],
+  'Jack':    ['Scottie Scheffler','Cameron Young','Justin Thomas','Shane Lowry','Jake Knapp','Cameron Smith','Sam Stevens','Kristoffer Reitan'],
+  'Michael': ['Brooks Koepka','Viktor Hovland','Rickie Fowler','Sahith Theegala','Patrick Rodgers','Keegan Bradley','Patrick Reed','Si Woo Kim'],
+};
+
+let playerData = {};
+
+function norm(n){ return n.toLowerCase().replace(/[áàâä]/g,'a').replace(/[éèêë]/g,'e').replace(/[íìîï]/g,'i').replace(/[óòôö]/g,'o').replace(/[úùûü]/g,'u').replace(/[ñ]/g,'n').replace(/[^a-z]/g,''); }
+
+function fmt(s){
+  if(s===null||s===undefined) return '-';
+  const n = typeof s==='string'?(s==='E'?0:parseInt(s)):s;
+  if(isNaN(n)) return String(s);
+  if(n===0) return 'E';
+  return n>0?'+'+n:String(n);
+}
+
+function sc(s){
+  if(s===null||s===undefined) return '';
+  const n = typeof s==='string'?(s==='E'?0:parseInt(s)):s;
+  if(isNaN(n)||n===0) return 'score-even';
+  return n<0?'score-good':'score-bad';
+}
+
+function getPlayer(name){ return playerData[norm(name)] || null; }
+
+function teamScore(person){
+  return PICKS[person].reduce((sum,p)=>{ const d=getPlayer(p); return sum+(d?d.scoreNum:0); },0);
+}
+
+async function loadData(){
+  try {
+    const res = await fetch(API);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const event = data.events?.[0];
+    if(!event) throw new Error('No event data');
+    const comp = event.competitions?.[0];
+    const status = comp?.status?.type?.description||'';
+    const isLive = /in.?progress/i.test(status);
+    document.getElementById('live-badge').classList.toggle('visible', isLive);
+    document.getElementById('subtitle').textContent = `TPC River Highlands · Updated ${new Date().toLocaleTimeString()}`;
+
+    playerData = {};
+    (comp?.competitors||[]).forEach(c=>{
+      const name = c.athlete?.fullName||'';
+      const scoreRaw = c.score||'E';
+      const scoreNum = scoreRaw==='E'?0:(parseInt(scoreRaw)||0);
+      const rounds = (c.linescores||[]).slice(0,4).map(ls=>{ const v=ls.displayValue; return v&&v!==''?(v==='E'?0:parseInt(v)):null; });
+      const madecut = !String(c.status?.type?.name||'').toLowerCase().includes('cut') && !String(c.status||'').toLowerCase().includes('cut');
+      playerData[norm(name)] = { name, scoreNum, rounds, madecut, pos: c.sortOrder||c.order||999, displayPos: c.position?.displayName||'' };
+    });
+
+    renderAll();
+  } catch(e) {
+    console.error(e);
+    showError(`Could not load scores: ${e.message}`);
+  }
+}
+
+function renderAll(){ renderStandings(); renderRosters(); renderField(); }
+
+function renderStandings(){
+  const sorted = Object.keys(PICKS).sort((a,b)=>teamScore(a)-teamScore(b));
+  const medals = ['🥇','🥈','🥉'];
+  const rows = sorted.map((name,i)=>{
+    const t = teamScore(name);
+    return `<tr class="${i===0?'winner-row':''}">
+      <td style="padding-left:16px;color:var(--text-muted);width:36px">${i+1}</td>
+      <td style="font-weight:500">${medals[i]||''} ${name}</td>
+      <td class="${sc(t)}" style="text-align:right;padding-right:16px;font-size:16px;font-weight:500">${fmt(t)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('standings').innerHTML = `<div class="card"><table class="tbl">
+    <thead><tr><th style="padding-left:16px">#</th><th>Participant</th><th style="text-align:right;padding-right:16px">Score</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+function renderRosters(){
+  const sorted = Object.keys(PICKS).sort((a,b)=>teamScore(a)-teamScore(b));
+  const medals = ['🥇','🥈','🥉'];
+  const cards = sorted.map((name,i)=>{
+    const t = teamScore(name);
+    const rows = PICKS[name].map(p=>{
+      const d = getPlayer(p);
+      const s = d ? fmt(d.scoreNum) : '-';
+      const cls = d ? sc(d.scoreNum) : '';
+      const mc = d&&!d.madecut ? '<span class="mc-chip">MC</span>' : '';
+      return `<tr><td>${p}${mc}</td><td class="${cls}">${s}</td></tr>`;
+    }).join('');
+    return `<div class="roster-card">
+      <div class="rc-header">
+        <span class="rc-name">${medals[i]||''} ${name}</span>
+        <span class="rc-total ${sc(t)}">${fmt(t)}</span>
+      </div>
+      <table class="pick-tbl">${rows}</table>
+    </div>`;
+  }).join('');
+  document.getElementById('rosters').innerHTML = `<div class="roster-grid">${cards}</div>`;
+}
+
+function renderField(){
+  const pickedBy = {};
+  Object.entries(PICKS).forEach(([person,picks])=>picks.forEach(p=>{ const k=norm(p); if(!pickedBy[k]) pickedBy[k]=[]; pickedBy[k].push(person); }));
+  const players = Object.values(playerData).sort((a,b)=>a.pos-b.pos).slice(0,80);
+  const rows = players.map(p=>{
+    const k = norm(p.name);
+    const pickers = (pickedBy[k]||[]).join(', ');
+    const mc = !p.madecut ? '<span class="mc-chip">MC</span>' : '';
+    const r = p.rounds;
+    return `<tr>
+      <td style="padding-left:16px;color:var(--text-muted);font-size:12px">${p.displayPos}</td>
+      <td style="font-weight:500">${p.name}${mc}</td>
+      <td class="${sc(r[0])}" style="text-align:right">${r[0]!=null?fmt(r[0]):'-'}</td>
+      <td class="${sc(r[1])}" style="text-align:right">${r[1]!=null?fmt(r[1]):'-'}</td>
+      <td class="${sc(r[2])}" style="text-align:right">${r[2]!=null?fmt(r[2]):'-'}</td>
+      <td class="${sc(r[3])}" style="text-align:right">${r[3]!=null?fmt(r[3]):'-'}</td>
+      <td class="${sc(p.scoreNum)}" style="text-align:right;padding-right:8px;font-weight:500">${fmt(p.scoreNum)}</td>
+      <td style="padding-right:16px;font-size:12px;color:var(--text-secondary)">${pickers||'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('field').innerHTML = `<div class="card"><table class="tbl" style="min-width:600px">
+    <thead><tr>
+      <th style="padding-left:16px">Pos</th><th>Player</th>
+      <th style="text-align:right">R1</th><th style="text-align:right">R2</th>
+      <th style="text-align:right">R3</th><th style="text-align:right">R4</th>
+      <th style="text-align:right">Total</th>
+      <th style="padding-right:16px">Picked by</th>
+    </tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+function showError(msg){
+  ['standings','rosters','field'].forEach(id=>{ document.getElementById(id).innerHTML=`<div class="error-msg">${msg}</div>`; });
+}
+
+function showTab(name,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  el.classList.add('active');
+}
+
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
